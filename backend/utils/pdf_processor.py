@@ -107,8 +107,8 @@ def extract_text_from_pdf(pdf_stream):
             
             # Process one page at a time to minimize memory usage
             full_text = ""
-            for page_num, page_data in enumerate(pages, 1):
-                print(f"Processing page {page_num} of {len(pages)}...")
+            for page_num, page_data in enumerate(page, 1):
+                print(f"Processing page {page_num} of {len(page)}...")
                 try:
                     text = process_page(page_data)
                     if text and text.strip():
