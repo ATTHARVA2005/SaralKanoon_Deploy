@@ -40,7 +40,7 @@ def process_page(args):
 
 def extract_text_from_pdf(pdf_stream):
     """
-    Extracts all text from a given PDF file stream using parallel processing
+    Extracts all text from a given PDF file stream using a memory-efficient approach
     with Gemini's vision capabilities.
 
     Args:
@@ -49,7 +49,10 @@ def extract_text_from_pdf(pdf_stream):
 
     Returns:
         A single string containing all the text from the PDF,
-        or an empty string if extraction fails.
+        or raises an exception if extraction fails.
+
+    Raises:
+        Exception: If text extraction fails or memory issues occur
     """
     from .ai_client import GeminiClient
     
@@ -68,23 +71,20 @@ def extract_text_from_pdf(pdf_stream):
                 page = doc.load_page(page_num)
                 pages.append((page, gemini, 1.5))  # Using 1.5x scale for a balance of quality and speed
             
-            # Process pages in pairs to balance performance and memory usage
+            # Process one page at a time to minimize memory usage
             full_text = ""
-            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-                for i in range(0, len(pages), 2):
-                    # Get a pair of pages (or just one if it's the last odd page)
-                    current_pages = pages[i:i + 2]
-                    # Process the pair of pages
-                    futures = list(executor.map(process_page, current_pages))
-                    
-                    # Handle the results for this pair
-                    for j, text in enumerate(futures, 1):
-                        page_num = i + j
-                        if text.strip():
-                            print(f"Successfully extracted {len(text.split())} words from page {page_num}")
-                            full_text += text + "\n"
-                        else:
-                            print(f"Warning: No text extracted from page {page_num}")
+            for page_num, page_data in enumerate(pages, 1):
+                print(f"Processing page {page_num} of {len(pages)}...")
+                try:
+                    text = process_page(page_data)
+                    if text and text.strip():
+                        print(f"Successfully extracted {len(text.split())} words from page {page_num}")
+                        full_text += text + "\n"
+                    else:
+                        print(f"Warning: No text extracted from page {page_num}")
+                except Exception as e:
+                    print(f"Error processing page {page_num}: {str(e)}")
+                    continue
             
             result = full_text.strip()
             if result:
