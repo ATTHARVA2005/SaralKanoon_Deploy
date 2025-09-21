@@ -132,31 +132,7 @@ def extract_text_from_pdf(pdf_stream):
             raise Exception("Failed to extract text from PDF") from e
         return full_text.strip()  # Return any text we managed to extract
             
-            # Process one page at a time to minimize memory usage
-            full_text = ""
-            for page_num, page_data in enumerate(page, 1):
-                print(f"Processing page {page_num} of {len(page)}...")
-                try:
-                    text = process_page(page_data)
-                    if text and text.strip():
-                        print(f"Successfully extracted {len(text.split())} words from page {page_num}")
-                        full_text += text + "\n"
-                    else:
-                        print(f"Warning: No text extracted from page {page_num}")
-                except Exception as e:
-                    print(f"Error processing page {page_num}: {str(e)}")
-                    continue
-            
-            result = full_text.strip()
-            if result:
-                print("Successfully extracted text from all pages")
-                return result
-            else:
-                raise Exception("No text could be extracted from any page in the document")
-                
-    except Exception as e:
-        print(f"Error in PDF processing: {e}")
-        return ""
+
 
 # --- Example Usage (for testing this file directly) ---
 # This part will only run when you execute `python pdf_processor.py`
