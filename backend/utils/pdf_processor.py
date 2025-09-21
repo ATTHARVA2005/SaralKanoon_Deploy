@@ -31,6 +31,8 @@ def process_page(page, gemini):
     """
     Process a single page sequentially with optimization and error handling.
     """
+    pix = None
+    result = ""
     try:
         # Use a lower scale factor for the initial render
         pix = page.get_pixmap(matrix=fitz.Matrix(1.0, 1.0))
@@ -46,7 +48,9 @@ def process_page(page, gemini):
         
         while retry_count < max_retries:
             try:
-                return gemini.extract_text_from_image(optimized_data)
+                result = gemini.extract_text_from_image(optimized_data)
+                if result:
+                    break
             except Exception as e:
                 last_error = e
                 retry_count += 1
@@ -55,12 +59,18 @@ def process_page(page, gemini):
                     import time
                     time.sleep(2)  # Wait 2 seconds before retry
         
-        if last_error:
+        if last_error and not result:
             raise last_error
+        
+        return result
             
     except Exception as e:
         print(f"Error processing page: {str(e)}")
         return ""  # Return empty string on error to continue processing
+    finally:
+        # Clean up
+        if pix:
+            pix = None
 
 def extract_text_from_pdf(pdf_stream):
     """
@@ -79,22 +89,24 @@ def extract_text_from_pdf(pdf_stream):
     """
     from .ai_client import GeminiClient
     
+    full_text = ""
     try:
         gemini = GeminiClient()
         print("Initialized Gemini client successfully")
         
         pdf_bytes = pdf_stream.read()
-        with fitz.open(stream=pdf_bytes, filetype="pdf") as doc:
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        
+        try:
             total_pages = len(doc)
             print(f"Processing {total_pages} pages sequentially...")
-            full_text = ""
             
             # Process each page sequentially
             for page_num in range(total_pages):
                 print(f"Processing page {page_num + 1} of {total_pages}...")
                 try:
                     page = doc.load_page(page_num)
-                    text = process_page(page, gemini)  # Using simplified process_page function
+                    text = process_page(page, gemini)
                     
                     if text and text.strip():
                         print(f"Successfully extracted text from page {page_num + 1}")
@@ -103,7 +115,22 @@ def extract_text_from_pdf(pdf_stream):
                         print(f"No text extracted from page {page_num + 1}")
                 except Exception as e:
                     print(f"Error processing page {page_num + 1}: {str(e)}")
-                    continue  # Continue with next page on error
+                    continue
+        finally:
+            # Always close the document
+            doc.close()
+        
+        # Check if we got any text at all
+        if not full_text.strip():
+            raise Exception("No text could be extracted from the PDF")
+            
+        return full_text.strip()
+                
+    except Exception as e:
+        print(f"Error in PDF processing: {str(e)}")
+        if not full_text.strip():
+            raise Exception("Failed to extract text from PDF") from e
+        return full_text.strip()  # Return any text we managed to extract
             
             # Process one page at a time to minimize memory usage
             full_text = ""
