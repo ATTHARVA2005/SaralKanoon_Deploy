@@ -68,18 +68,23 @@ def extract_text_from_pdf(pdf_stream):
                 page = doc.load_page(page_num)
                 pages.append((page, gemini, 1.5))  # Using 1.5x scale for a balance of quality and speed
             
-            # Process pages in parallel
-            with concurrent.futures.ThreadPoolExecutor(max_workers=min(total_pages, 4)) as executor:
-                futures = list(executor.map(process_page, pages))
-            
-            # Combine results
+            # Process pages in pairs to balance performance and memory usage
             full_text = ""
-            for page_num, text in enumerate(futures, 1):
-                if text.strip():
-                    print(f"Successfully extracted {len(text.split())} words from page {page_num}")
-                    full_text += text + "\n"
-                else:
-                    print(f"Warning: No text extracted from page {page_num}")
+            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                for i in range(0, len(pages), 2):
+                    # Get a pair of pages (or just one if it's the last odd page)
+                    current_pages = pages[i:i + 2]
+                    # Process the pair of pages
+                    futures = list(executor.map(process_page, current_pages))
+                    
+                    # Handle the results for this pair
+                    for j, text in enumerate(futures, 1):
+                        page_num = i + j
+                        if text.strip():
+                            print(f"Successfully extracted {len(text.split())} words from page {page_num}")
+                            full_text += text + "\n"
+                        else:
+                            print(f"Warning: No text extracted from page {page_num}")
             
             result = full_text.strip()
             if result:
