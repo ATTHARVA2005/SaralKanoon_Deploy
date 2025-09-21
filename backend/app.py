@@ -176,4 +176,8 @@ def compare_pdfs():
 if __name__ == '__main__':
     # Runs the server on http://127.0.0.1:5000
     # The debug=True flag allows for hot-reloading when you save changes.
-    app.run(debug=True, port=5000)
+    import os
+
+    if __name__ == "__main__":
+        port = int(os.environ.get("PORT", 5000))  # Render provides PORT
+        app.run(host="0.0.0.0", port=port, debug=False)
