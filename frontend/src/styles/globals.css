@@ -1,0 +1,75 @@
+/* src/styles/globals.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&display=swap');
+/* Removed Tailwind directives due to unknown at-rule error */
+/* If you intend to use Tailwind, ensure your build tool supports it. */
+
+
+@layer base {
+  :root {
+    --color-background: #0a0a0a;
+    --color-foreground: #111111;
+    --color-text-primary: #ffffff;
+    --color-text-secondary: #a1a1aa;
+    --color-accent: #3b82f6;
+    --color-destructive: #ff4444;
+    --color-border: #27272a;
+    --color-muted: #18181b;
+    --color-card: #141414;
+    --color-gradient-start: #3b82f6;
+    --color-gradient-end: #8b5cf6;
+  }
+
+  .light {
+    --color-background: #fafafa;
+    --color-foreground: #ffffff;
+    --color-text-primary: #09090b;
+    --color-text-secondary: #71717a;
+    --color-accent: #3b82f6;
+    --color-destructive: #ef4444;
+    --color-border: #e4e4e7;
+    --color-muted: #f4f4f5;
+    --color-card: #ffffff;
+    --color-gradient-start: #3b82f6;
+    --color-gradient-end: #8b5cf6;
+  }
+
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0);
+    background-size: 20px 20px;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  .gradient-text {
+    background: linear-gradient(to right, var(--color-gradient-start), var(--color-gradient-end));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .glass-effect {
+    background-color: rgba(17, 17, 17, 0.8); /* Equivalent to bg-foreground/80 */
+    -webkit-backdrop-filter: blur(24px); /* Safari support */
+    backdrop-filter: blur(24px); /* Equivalent to backdrop-blur-xl */
+    border: 1px solid rgba(39, 39, 42, 0.5); /* Equivalent to border border-border/50 */
+  }
+
+  .glow-effect {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
+  }
+}
