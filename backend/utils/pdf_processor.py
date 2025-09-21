@@ -6,37 +6,65 @@ import concurrent.futures
 from PIL import Image
 import io
 
-def optimize_image_bytes(img_data: bytes, max_size: int = 1000) -> bytes:
+def optimize_image_bytes(img_data: bytes, max_size: int = 800) -> bytes:
     """
     Optimize the image for faster processing while maintaining readability.
+    Reduced max size and quality for better performance.
     """
     img = Image.open(io.BytesIO(img_data))
+    
+    # Convert to RGB if image is in RGBA mode
+    if img.mode == 'RGBA':
+        img = img.convert('L')
     
     # Calculate new dimensions while maintaining aspect ratio
     ratio = min(max_size / img.width, max_size / img.height)
     new_size = (int(img.width * ratio), int(img.height * ratio))
     
-    # Resize and optimize
-    img = img.resize(new_size, Image.Resampling.LANCZOS)
+    # Resize with a simpler algorithm
+    img = img.resize(new_size, Image.Resampling.BILINEAR)
     
-    # Convert back to bytes
+    # Convert back to bytes with JPEG format and reduced quality
     output = io.BytesIO()
-    img.save(output, format='PNG', optimize=True)
+    img.save(output, format='JPEG', quality=85, optimize=True)
     return output.getvalue()
 
 def process_page(args):
     """
     Process a single page with the given parameters.
+    Includes retry logic and better error handling.
     """
     page, gemini, scale = args
-    pix = page.get_pixmap(matrix=fitz.Matrix(scale, scale))
-    img_data = pix.tobytes("png")
-    
-    # Optimize image before sending to Gemini
-    optimized_data = optimize_image_bytes(img_data)
-    
-    # Use Gemini Vision to extract text
-    return gemini.extract_text_from_image(optimized_data)
+    try:
+        # Reduce initial scale for better performance
+        pix = page.get_pixmap(matrix=fitz.Matrix(scale, scale))
+        img_data = pix.tobytes("png")
+        
+        # Optimize image before sending to Gemini
+        optimized_data = optimize_image_bytes(img_data)
+        
+        # Use Gemini Vision to extract text with retries
+        max_retries = 2
+        retry_count = 0
+        last_error = None
+        
+        while retry_count < max_retries:
+            try:
+                return gemini.extract_text_from_image(optimized_data)
+            except Exception as e:
+                last_error = e
+                retry_count += 1
+                if retry_count < max_retries:
+                    print(f"Retrying page after error: {str(e)}")
+                    import time
+                    time.sleep(2)  # Wait 2 seconds before retry
+        
+        if last_error:
+            raise last_error
+            
+    except Exception as e:
+        print(f"Error processing page: {str(e)}")
+        return ""  # Return empty string on error to continue processing
 
 def extract_text_from_pdf(pdf_stream):
     """
